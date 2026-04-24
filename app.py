@@ -1,25 +1,19 @@
 import gradio as gr
 from src.backend import get_answer, load_pdf
 
-# Store chat history
-chat_history = []
 
-# Function to handle chat
-def chat_with_pdf(question):
-    global chat_history
-
+# --- CHAT FUNCTION (STATE SAFE) ---
+def chat_with_pdf(question, history):
     if not question:
-        return chat_history
+        return history, ""
 
     answer = get_answer(question)
 
-    # Append in correct format
-    chat_history.append((question, answer))
-
-    return chat_history
+    history = history + [(question, answer)]
+    return history, ""
 
 
-# Function to upload PDF
+# --- UPLOAD FUNCTION ---
 def upload_pdf(file):
     if file is None:
         return "Please upload a PDF."
@@ -28,16 +22,14 @@ def upload_pdf(file):
     return "✅ PDF uploaded and processed successfully!"
 
 
-# UI Layout
+# --- UI ---
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
-    gr.Markdown(
-        """
-        # 📄 Smart PDF QA Chatbot  
-        ### Ask Questions, Get Instant Answers 😊  
-        Upload a PDF and interact with it using AI.
-        """
-    )
+    gr.Markdown("""
+    # 📄 Smart PDF QA Chatbot  
+    ### Ask Questions, Get Instant Answers 😊  
+    Upload a PDF and interact with it using AI.
+    """)
 
     with gr.Row():
         with gr.Column(scale=1):
@@ -47,11 +39,15 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
         with gr.Column(scale=2):
             chatbot = gr.Chatbot(height=400)
+
             msg = gr.Textbox(
                 placeholder="Ask something about your PDF...",
                 lines=2
             )
+
             send_btn = gr.Button("Send")
+
+            state = gr.State([])  # ✅ FIX: proper chat memory
 
     # Upload action
     upload_btn.click(
@@ -63,8 +59,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     # Chat action
     send_btn.click(
         fn=chat_with_pdf,
-        inputs=msg,
-        outputs=chatbot
+        inputs=[msg, state],
+        outputs=[chatbot, msg]
+    ).then(
+        lambda h: h,
+        inputs=state,
+        outputs=state
     )
 
 
