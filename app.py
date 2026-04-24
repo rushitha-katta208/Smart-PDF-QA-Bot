@@ -4,36 +4,38 @@ from src.backend import get_answer, load_pdf
 # Store chat history
 chat_history = []
 
-# Function to handle question answering
+# Function to handle chat
 def chat_with_pdf(question):
+    global chat_history
+
     if not question:
         return chat_history
 
-    # Append user question
-    chat_history.append({"role": "user", "content": question})
-
-    # Get answer from your backend
     answer = get_answer(question)
 
-    # Append assistant answer
-    chat_history.append({"role": "assistant", "content": answer})
+    # Append in correct format
+    chat_history.append((question, answer))
 
     return chat_history
+
 
 # Function to upload PDF
 def upload_pdf(file):
     if file is None:
         return "Please upload a PDF."
+
     load_pdf(file.name)
     return "✅ PDF uploaded and processed successfully!"
 
+
+# UI Layout
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     gr.Markdown(
         """
-        # 📄 Smart PDF QA Chatbot
-        ### Ask Questions, Get Instant Answers 😊
-        Upload a PDF and ask questions intelligently.
+        # 📄 Smart PDF QA Chatbot  
+        ### Ask Questions, Get Instant Answers 😊  
+        Upload a PDF and interact with it using AI.
         """
     )
 
@@ -53,17 +55,18 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     # Upload action
     upload_btn.click(
-        upload_pdf,
+        fn=upload_pdf,
         inputs=pdf_file,
         outputs=upload_status
     )
 
     # Chat action
     send_btn.click(
-        chat_with_pdf,
+        fn=chat_with_pdf,
         inputs=msg,
         outputs=chatbot
     )
 
+
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.launch()
